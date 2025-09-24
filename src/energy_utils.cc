@@ -32,6 +32,7 @@ void rapl_utils::energy_init()
   char *nodelist = fgets((char *)malloc(16 * sizeof(char)), 16, nodes);
   fclose(nodes);
   numa_nodes = (int)strlen(nodelist) / 2;
+  free(nodelist);
 
   // Allocate space for the variables of each node
   first_node_core = std::make_unique<int[]>(numa_nodes);
@@ -57,6 +58,7 @@ void rapl_utils::energy_init()
                    '-') +
            1) +
       1;
+  fclose(onlinecores);
 
   read_INTEL_MSR_RAPL_POWER_UNIT(0);
   power_increment =
