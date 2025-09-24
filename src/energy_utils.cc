@@ -174,13 +174,18 @@ void rapl_utils::update_data(struct EnergyAux &data, int domain)
 //						                GETTERS
 //////////////////////////////////////////////////////////////////////
 
-float rapl_utils::get_package_energy() { return get_energy(0); }
+// float rapl_utils::get_package_energy() { return get_energy(0); }
 
-float rapl_utils::get_package_power() { return get_power(pkg_energy_aux, 0); }
+// float rapl_utils::get_package_power() { return get_power(pkg_energy_aux, 0); }
 
 void rapl_utils::start_package_measurement_interval(struct EnergyAux &aux_data)
 {
   update_data(aux_data, 0);
+}
+
+void rapl_utils::start_package_measurement_interval()
+{
+  start_package_measurement_interval(pkg_energy_aux);
 }
 
 void rapl_utils::stop_package_measurement_interval(EnergyAux &aux_data, EnergyData &output_data)
@@ -202,6 +207,11 @@ void rapl_utils::stop_package_measurement_interval(EnergyAux &aux_data, EnergyDa
 
   // Update the total energy consumed by this node
   output_data.total_energy += energy_diff;
+}
+
+void rapl_utils::stop_package_measurement_interval()
+{
+  stop_package_measurement_interval(pkg_energy_aux, pkg_energy_data);
 }
 
 float rapl_utils::get_cores_energy() { return get_energy(1); }

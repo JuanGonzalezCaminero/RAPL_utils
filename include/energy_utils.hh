@@ -152,17 +152,21 @@ namespace rapl_utils
     //					GETTERS FOR SPECIFIC VALUES
     //////////////////////////////////////////////////////////////////////
 
+    // These need to be re-worked, they should work with separate EnergyAux structs for these instantaneous
+    // measurements, and their purpose should be defined more clearly (What do these do that the measurement
+    // intervals don't?)
+
     /*
     Returns the last energy reading of RAPL's Package domain in Joules
     The value returned is the sum of the energy consumed by all CPUs in the system
     */
-    float get_package_energy();
+    // float get_package_energy();
 
     /*
     Returns the average power consumed since the last time this function was called,
     in Watts
     */
-    float get_package_power();
+    // float get_package_power();
 
     /*
     Starts a measurement interval, storing the current time and energy reading for
@@ -172,13 +176,29 @@ namespace rapl_utils
     void start_package_measurement_interval(EnergyAux &aux_data);
 
     /*
+    Starts a measurement interval, storing the current time and energy reading for
+    the processor package (The sum of the energy readings for all CPUs in the
+    system) in the internal EnergyAux struct for the package
+    */
+    void start_package_measurement_interval();
+
+    /*
     Stops the measurement interval. Computes the average power consumption by the
     CPU package in Watts (Sum of all CPUs in the system) since the last time the
     start_package_power_interval function was called on the provided EnergyAux struct
     Also computes the energy consumption during the interval
-    Both values are updated in the EnergyAux struct
+    Both values are updated in the EnergyData struct
     */
     void stop_package_measurement_interval(EnergyAux &aux_data, EnergyData &output_data);
+
+    /*
+    Stops the measurement interval. Computes the average power consumption by the
+    CPU package in Watts (Sum of all CPUs in the system) since the last time the
+    start_package_power_interval function was called
+    Also computes the energy consumption during the interval
+    Uses the internal EnergyAux and EnergyData structs for the package
+    */
+    void stop_package_measurement_interval();
 
     /*
     Returns the last energy reading of RAPL's Core domain in Joules
