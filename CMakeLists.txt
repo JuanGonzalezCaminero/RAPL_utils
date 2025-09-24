@@ -1,12 +1,12 @@
 cmake_minimum_required(VERSION 3.25.2)
 
 project(RAPL_utils
-  LANGUAGES C
+  LANGUAGES CXX
 )
 
 set(RAPL_UTILS_SRCS
-  src/energy_utils.c
-  src/msr_reader.c
+  src/energy_utils.cc
+  src/msr_reader.cc
 )
 
 add_library(RAPL_utils SHARED)
