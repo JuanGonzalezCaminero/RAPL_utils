@@ -7,18 +7,31 @@
 #include <unistd.h>
 #include <memory>
 
+#define MAX_NUMA_NODES 8
 namespace rapl_utils
 {
     //////////////////////////////////////////////////////////////////////
     //						  	   DATA
     //////////////////////////////////////////////////////////////////////
 
-    struct PowerInfo
+    // This struct contains per-node energy measurements along with the time they were taken
+    struct EnergyAux
     {
+        // Timestamp when this struct was last updated
         struct timespec time;
+        // Last measured energy per NUMA node
         // We need a counter for each NUMA node in the system, this assumes
         // a maximum of 8 nodes, but may be increased or decreased as needed
-        float energy[8];
+        float energy[MAX_NUMA_NODES];
+    };
+
+    // Stores the machine's average power consumption and energy consumption during the last
+    // measurement interval, and total energy consumption.
+    struct EnergyData
+    {
+        double power{0};
+        double energy{0};
+        double total_energy{0};
     };
 
     unsigned long long
@@ -45,9 +58,14 @@ namespace rapl_utils
     /*
     Store the time and value of the latest energy measurement
     */
-    PowerInfo pkg_power_data;
-    std::unique_ptr<PowerInfo[]> node_pkg_power_data;
-    PowerInfo cores_power_data;
+    EnergyAux pkg_energy_aux;
+    EnergyAux cores_energy_aux;
+
+    /*
+    Used to extract results from measurement intervals and to store total consumption per node
+    */
+    EnergyData pkg_energy_data;
+    EnergyData cores_energy_data;
 
     /*
     Store NUMA-related information (Number of nodes, cores per node, id of
@@ -90,13 +108,14 @@ namespace rapl_utils
     /*
     Returns the average power consumed by the specified RAPL domain, in Watts.
     This function will return the average power consumed since the last time it
-    was called with that PowerInfo struct.
+    was called with that EnergyAux struct.
     */
-    float get_power(struct PowerInfo &data, int domain);
+    float get_power(struct EnergyAux &data, int domain);
 
-    void update_data(struct PowerInfo &data, int domain);
-
-    void update_node_data(int node, struct PowerInfo &data, int domain);
+    /*
+    Updates the energy and time measurements for all nodes in the EnergyAux struct
+    */
+    void update_data(struct EnergyAux &data, int domain);
 
     /*
     Receives two arrays, one with current energy measurements for each NUMA node in
@@ -148,30 +167,18 @@ namespace rapl_utils
     /*
     Starts a measurement interval, storing the current time and energy reading for
     the processor package (The sum of the energy readings for all CPUs in the
-    system) in the supplied PowerInfo struct
+    system) in the supplied EnergyAux struct
     */
-    void start_package_power_interval(PowerInfo &data);
+    void start_package_measurement_interval(EnergyAux &aux_data);
 
     /*
-    Returns the average power consumption by the CPU package in Watts (Sum of all
-    CPUs in the system) since the last time the start_package_power_interval
-    function was called on the supplied PowerInfo struct
+    Stops the measurement interval. Computes the average power consumption by the
+    CPU package in Watts (Sum of all CPUs in the system) since the last time the
+    start_package_power_interval function was called on the provided EnergyAux struct
+    Also computes the energy consumption during the interval
+    Both values are updated in the EnergyAux struct
     */
-    float stop_package_power_interval(PowerInfo &data);
-
-    /*
-    Starts a measurement interval, storing the current energy reading for the
-    processor package (The sum of the energy readings for all CPUs in the system) in
-    the supplied EnergyInfo struct
-    */
-    void start_package_energy_interval(PowerInfo &data);
-
-    /*
-    Returns the energy consumption by the CPU package in Joules (Sum of all CPUs in
-    the system) since the last time the start_package_power_interval function was
-    called on the supplied EnergyInfo struct
-    */
-    float stop_package_energy_interval(PowerInfo &data);
+    void stop_package_measurement_interval(EnergyAux &aux_data, EnergyData &output_data);
 
     /*
     Returns the last energy reading of RAPL's Core domain in Joules
