@@ -171,7 +171,7 @@ float rapl_utils::get_energy(int domain)
   return energy;
 }
 
-float rapl_utils::get_energy_diff(float *current_energy, float *previous_energy)
+float rapl_utils::get_energy_diff(const float *current_energy, const float *previous_energy)
 {
   float energy_diff = 0;
   for (int i = 0; i < numa_nodes; i++)
@@ -191,21 +191,12 @@ float rapl_utils::get_energy_diff(float *current_energy, float *previous_energy)
   return energy_diff;
 }
 
-float rapl_utils::get_power(struct EnergyAux &data, int domain)
+float rapl_utils::get_power(const EnergyAux &previous_data, const EnergyAux &current_data, int domain)
 {
-  struct EnergyAux previous_data;
-  previous_data.time = data.time;
-  for (int i = 0; i < numa_nodes; i++)
-  {
-    previous_data.energy[i] = data.energy[i];
-  }
-
-  update_data(data, domain);
-
   double time_diff =
-      (double)(data.time.tv_sec - previous_data.time.tv_sec) +
-      ((double)(data.time.tv_nsec - previous_data.time.tv_nsec) / 1000000000);
-  float energy_diff = get_energy_diff(data.energy, previous_data.energy);
+      (double)(current_data.time.tv_sec - previous_data.time.tv_sec) +
+      ((double)(current_data.time.tv_nsec - previous_data.time.tv_nsec) / 1000000000);
+  float energy_diff = get_energy_diff(current_data.energy, previous_data.energy);
 
   // Power = Energy delta in Joules / Time delta in seconds
   float power = (float)(energy_diff / time_diff);
@@ -230,6 +221,10 @@ void rapl_utils::update_data(struct EnergyAux &data, int domain)
 
 // float rapl_utils::get_package_power() { return get_power(pkg_energy_aux, 0); }
 
+// float rapl_utils::get_cores_energy() { return get_energy(1); }
+
+// float rapl_utils::get_cores_power() { return get_power(cores_energy_aux, 1); }
+
 void rapl_utils::start_package_measurement_interval(struct EnergyAux &aux_data)
 {
   update_data(aux_data, 0);
@@ -242,21 +237,24 @@ void rapl_utils::start_package_measurement_interval()
 
 void rapl_utils::stop_package_measurement_interval(EnergyAux &aux_data, EnergyData &output_data)
 {
-  // Store average power consumption for this interval
-  output_data.power = get_power(aux_data, 0);
-
+  constexpr int pkg_domain = 0;
+  // Backup the last measurements
   struct EnergyAux previous_data;
+  previous_data.time = aux_data.time;
   for (int i = 0; i < numa_nodes; i++)
   {
     previous_data.energy[i] = aux_data.energy[i];
   }
-  update_data(aux_data, 0);
+  // Take new measurements
+  update_data(aux_data, pkg_domain);
 
-  auto energy_diff = get_energy_diff(aux_data.energy, previous_data.energy);
+  // Store average power consumption for this interval
+  output_data.power = get_power(previous_data, aux_data, pkg_domain);
 
+  // Get energy delta taking into account the counter wraparound
+  float energy_diff = get_energy_diff(aux_data.energy, previous_data.energy);
   // Store energy consumed during this interval
   output_data.energy = energy_diff;
-
   // Update the total energy consumed by this node
   output_data.total_energy += energy_diff;
 }
@@ -265,10 +263,6 @@ void rapl_utils::stop_package_measurement_interval()
 {
   stop_package_measurement_interval(pkg_energy_aux, pkg_energy_data);
 }
-
-float rapl_utils::get_cores_energy() { return get_energy(1); }
-
-float rapl_utils::get_cores_power() { return get_power(cores_energy_aux, 1); }
 
 float rapl_utils::get_processor_tdp()
 {

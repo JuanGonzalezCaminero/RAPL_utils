@@ -123,12 +123,12 @@ namespace rapl_utils
     This function will return the average power consumed since the last time it
     was called with that EnergyAux struct.
     */
-    float get_power(struct EnergyAux &data, int domain);
+    float get_power(const EnergyAux &previous_data, const EnergyAux &current_data, int domain);
 
     /*
     Updates the energy and time measurements for all nodes in the EnergyAux struct
     */
-    void update_data(struct EnergyAux &data, int domain);
+    void update_data(EnergyAux &data, int domain);
 
     /*
     Receives two arrays, one with current energy measurements for each NUMA node in
@@ -141,7 +141,7 @@ namespace rapl_utils
     event happens between the taking of two measurements, it needs to be detected
     and corrected.
     */
-    float get_energy_diff(float *current_energy, float *previous_energy);
+    float get_energy_diff(const float *current_energy, const float *previous_energy);
 
     //////////////////////////////////////////////////////////////////////
     //						 READING MSR FIELDS
@@ -182,6 +182,18 @@ namespace rapl_utils
     // float get_package_power();
 
     /*
+    Returns the last energy reading of RAPL's Core domain in Joules
+    The value returned is the sum of the energy consumed by all CPUs in the system
+    */
+    // float get_cores_energy();
+
+    /*
+    Returns the average power consumed since the last time this function was called,
+    in Watts
+    */
+    // float get_cores_power();
+
+    /*
     Starts a measurement interval, storing the current time and energy reading for
     the processor package (The sum of the energy readings for all CPUs in the
     system) in the supplied EnergyAux struct
@@ -212,18 +224,6 @@ namespace rapl_utils
     Uses the internal EnergyAux and EnergyData structs for the package
     */
     void stop_package_measurement_interval();
-
-    /*
-    Returns the last energy reading of RAPL's Core domain in Joules
-    The value returned is the sum of the energy consumed by all CPUs in the system
-    */
-    float get_cores_energy();
-
-    /*
-    Returns the average power consumed since the last time this function was called,
-    in Watts
-    */
-    float get_cores_power();
 
     /*
     Returns the TDP of the CPU in Watts
