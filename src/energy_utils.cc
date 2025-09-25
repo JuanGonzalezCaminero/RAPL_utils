@@ -135,7 +135,6 @@ float rapl_utils::get_node_energy(int node, int domain)
   // Package
   case 0:
     read_INTEL_MSR_PKG_ENERGY_STATUS(first_node_core[node]);
-    printf("%llu\n", INTEL_MSR_PKG_ENERGY_STATUS_VALUES[0]);
     return (float)INTEL_MSR_PKG_ENERGY_STATUS_VALUES[0] * energy_increment;
     break;
   // Cores
