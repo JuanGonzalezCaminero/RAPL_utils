@@ -53,7 +53,7 @@ void rapl_utils::monitoring_loop()
   while (do_monitoring)
   {
     start_package_measurement_interval();
-    sleep(0.5);
+    sleep(1);
     stop_package_measurement_interval();
     printf("Power: %lf, Energy: %lf, Total energy: %lf\n", pkg_energy_data.power, pkg_energy_data.energy, pkg_energy_data.total_energy);
   }
