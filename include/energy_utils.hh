@@ -86,14 +86,14 @@ namespace rapl_utils
     /*
     Launch a thread that will take measurements in the background
     */
-    void launch_monitoring_loop();
+    void launch_monitoring_loop(unsigned int sampling_interval_ms);
 
     void stop_monitoring_loop();
 
     /*
     Power measurement loop, intended to run on a separate thread
     */
-    void monitoring_loop();
+    void monitoring_loop(unsigned int sampling_interval_ms);
 
     //////////////////////////////////////////////////////////////////////
     //						  UTILITY FUNCTIONS

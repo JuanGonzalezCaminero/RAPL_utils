@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <chrono>
 
 using namespace rapl_utils;
 
@@ -33,10 +34,10 @@ namespace rapl_utils
   std::thread monitoring_thread;
 }
 
-void rapl_utils::launch_monitoring_loop()
+void rapl_utils::launch_monitoring_loop(unsigned int sampling_interval_ms)
 {
   do_monitoring = true;
-  monitoring_thread = std::thread(monitoring_loop);
+  monitoring_thread = std::thread(monitoring_loop, sampling_interval_ms);
 }
 
 void rapl_utils::stop_monitoring_loop()
@@ -48,12 +49,12 @@ void rapl_utils::stop_monitoring_loop()
 /*
 Power measurement loop, intended to run on a separate thread
 */
-void rapl_utils::monitoring_loop()
+void rapl_utils::monitoring_loop(unsigned int sampling_interval_ms)
 {
   while (do_monitoring)
   {
     start_package_measurement_interval();
-    sleep(1);
+    std::this_thread::sleep_for(std::chrono::milliseconds(sampling_interval_ms));
     stop_package_measurement_interval();
     printf("Power: %lf, Energy: %lf, Total energy: %lf\n", pkg_energy_data.power, pkg_energy_data.energy, pkg_energy_data.total_energy);
   }
