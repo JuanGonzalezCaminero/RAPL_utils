@@ -6,6 +6,59 @@
 
 using namespace rapl_utils;
 
+// Global variable definitions
+namespace rapl_utils
+{
+  // MSR value arrays
+  unsigned long long INTEL_MSR_RAPL_POWER_UNIT_VALUES[INTEL_MSR_RAPL_POWER_UNIT_NUMFIELDS];
+  unsigned long long INTEL_MSR_PKG_ENERGY_STATUS_VALUES[INTEL_MSR_PKG_ENERGY_STATUS_NUMFIELDS];
+  unsigned long long INTEL_MSR_PP0_ENERGY_STATUS_VALUES[INTEL_MSR_PP0_ENERGY_STATUS_NUMFIELDS];
+  unsigned long long INTEL_MSR_PKG_POWER_INFO_VALUES[INTEL_MSR_PKG_POWER_INFO_NUMFIELDS];
+
+  // Energy measurement variables
+  float power_increment{0};
+  float energy_increment{0};
+  float time_increment{0};
+  float energy_counter_max{0};
+
+  EnergyAux pkg_energy_aux;
+  EnergyAux cores_energy_aux;
+  EnergyData pkg_energy_data;
+  EnergyData cores_energy_data;
+
+  int numa_nodes{0};
+  std::unique_ptr<int[]> first_node_core;
+  int numcores{0};
+  bool do_monitoring{true};
+  std::thread monitoring_thread;
+}
+
+void rapl_utils::launch_monitoring_loop()
+{
+  do_monitoring = true;
+  monitoring_thread = std::thread(monitoring_loop);
+}
+
+void rapl_utils::stop_monitoring_loop()
+{
+  do_monitoring = false;
+  monitoring_thread.join();
+}
+
+/*
+Power measurement loop, intended to run on a separate thread
+*/
+void rapl_utils::monitoring_loop()
+{
+  while (do_monitoring)
+  {
+    start_package_measurement_interval();
+    sleep(0.5);
+    stop_package_measurement_interval();
+    printf("Power: %lf, Energy: %lf, Total energy: %lf\n", pkg_energy_data.power, pkg_energy_data.energy, pkg_energy_data.total_energy);
+  }
+}
+
 //////////////////////////////////////////////////////////////////////
 //						            UTILITY FUNCTIONS
 //////////////////////////////////////////////////////////////////////

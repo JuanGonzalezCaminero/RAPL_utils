@@ -6,6 +6,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <memory>
+#include <thread>
 
 #define MAX_NUMA_NODES 8
 namespace rapl_utils
@@ -34,53 +35,65 @@ namespace rapl_utils
         double total_energy{0};
     };
 
-    unsigned long long
+    extern unsigned long long
         INTEL_MSR_RAPL_POWER_UNIT_VALUES[INTEL_MSR_RAPL_POWER_UNIT_NUMFIELDS];
-    unsigned long long
+    extern unsigned long long
         INTEL_MSR_PKG_ENERGY_STATUS_VALUES[INTEL_MSR_PKG_ENERGY_STATUS_NUMFIELDS];
-    unsigned long long
+    extern unsigned long long
         INTEL_MSR_PP0_ENERGY_STATUS_VALUES[INTEL_MSR_PP0_ENERGY_STATUS_NUMFIELDS];
-    unsigned long long
+    extern unsigned long long
         INTEL_MSR_PKG_POWER_INFO_VALUES[INTEL_MSR_PKG_POWER_INFO_NUMFIELDS];
 
     /*
     Store the increment for each unit in this machine
     */
-    float power_increment = 0;
-    float energy_increment = 0;
-    float time_increment = 0;
+    extern float power_increment;
+    extern float energy_increment;
+    extern float time_increment;
 
     /*
     Store the value at which the energy counter wraps around
     */
-    float energy_counter_max = 0;
+    extern float energy_counter_max;
 
     /*
     Store the time and value of the latest energy measurement
     */
-    EnergyAux pkg_energy_aux;
-    EnergyAux cores_energy_aux;
+    extern EnergyAux pkg_energy_aux;
+    extern EnergyAux cores_energy_aux;
 
     /*
     Used to extract results from measurement intervals and to store total consumption per node
     */
-    EnergyData pkg_energy_data;
-    EnergyData cores_energy_data;
+    extern EnergyData pkg_energy_data;
+    extern EnergyData cores_energy_data;
 
     /*
     Store NUMA-related information (Number of nodes, cores per node, id of
     the first core in each node)
     */
-    int numa_nodes;
+    extern int numa_nodes;
 
-    std::unique_ptr<int[]> first_node_core;
-    int numcores;
+    extern std::unique_ptr<int[]> first_node_core;
+    extern int numcores;
 
     /*
-    Store cores frequency related information
+    Flag used to stop the monitoring loop
     */
-    int max_freq;
-    int min_freq;
+    extern bool do_monitoring;
+    extern std::thread monitoring_thread; // Default-constructed thread, will get replaced when we launch an actual thread
+
+    /*
+    Launch a thread that will take measurements in the background
+    */
+    void launch_monitoring_loop();
+
+    void stop_monitoring_loop();
+
+    /*
+    Power measurement loop, intended to run on a separate thread
+    */
+    void monitoring_loop();
 
     //////////////////////////////////////////////////////////////////////
     //						  UTILITY FUNCTIONS
