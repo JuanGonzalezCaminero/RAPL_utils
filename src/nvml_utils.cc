@@ -17,6 +17,7 @@ void nvml_utils::init()
     {
         nvmlDeviceGetHandleByIndex_v2(i, &device_handles[i]);
     }
+    printf("POWER METER: Number of GPUs detected: %d\n", num_GPUs);
 }
 
 void nvml_utils::update_gpu_energy(EnergyAux &data)

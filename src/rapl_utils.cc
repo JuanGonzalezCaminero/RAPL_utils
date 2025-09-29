@@ -91,6 +91,8 @@ void rapl_utils::init()
 
   // The maximum value of the energy counter is 2^32, stored here in joules
   energy_counter_max = ((long)1U << 32) * energy_increment;
+
+  printf("POWER METER: Number of NUMA nodes detected: %d\n", numa_nodes);
 }
 
 float rapl_utils::get_node_energy(int node, int domain)
