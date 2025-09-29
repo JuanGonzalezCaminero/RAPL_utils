@@ -44,7 +44,7 @@ that both CPUs will have the same reporting precissions for RAPL values. This is
 probably a safe assumption since valid CPU combinations will use very similar
 CPUs.
 */
-void rapl_utils::energy_init()
+void rapl_utils::init()
 {
   // Get the number of NUMA nodes. This file contains a list of node IDs
   // separated by "-". The length in characters of the file will be 2 for 1 node
@@ -161,7 +161,7 @@ float rapl_utils::get_power(const EnergyAux &previous_data, const EnergyAux &cur
 {
   double time_diff =
       (double)(current_data.time.tv_sec - previous_data.time.tv_sec) +
-      ((double)(current_data.time.tv_nsec - previous_data.time.tv_nsec) / 1000000000);
+      ((double)(current_data.time.tv_nsec - previous_data.time.tv_nsec) / 1E9);
   float energy_diff = get_energy_diff(current_data.energy, previous_data.energy);
 
   // Power = Energy delta in Joules / Time delta in seconds

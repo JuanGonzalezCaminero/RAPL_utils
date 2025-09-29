@@ -12,7 +12,7 @@ FILE *rapl_utils::open_msr(int core)
 
   if (!file)
   {
-    printf("Could not open %s\n", filename);
+    fprintf(stderr, "Could not open %s\n", filename);
   }
 
   return file;

@@ -1,5 +1,5 @@
-#ifndef rapl_utils_HH
-#define rapl_utils_HH
+#ifndef RAPL_UTILS_HH
+#define RAPL_UTILS_HH
 
 #include "rapl_const.hh"
 #include <stdio.h>
@@ -72,7 +72,7 @@ namespace rapl_utils
     Initializes the program, reading the energy units MSR and computing the
     increments for each unit in this machine
     */
-    void energy_init();
+    void init();
 
     /*
     Returns the last energy reading of the specified RAPL domain in Joules
@@ -97,7 +97,7 @@ namespace rapl_utils
     void update_cores_energy(EnergyAux &data);
 
     /*
-    Uses the measurements in the two provided EnergyAux structs to compute the average power consumed by the specified RAPL domain, in Watts.
+    Uses the measurements in the two provided EnergyAux structs to compute the average power consumed in Watts.
     */
     float get_power(const EnergyAux &previous_data, const EnergyAux &current_data);
 
