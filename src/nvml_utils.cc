@@ -26,7 +26,25 @@ void nvml_utils::update_gpu_energy(EnergyAux &data)
     unsigned long long energy{0};
     for (unsigned int i = 0; i < num_GPUs; ++i)
     {
-        nvmlDeviceGetTotalEnergyConsumption(device_handles[i], &energy);
+        auto nvml_error = nvmlDeviceGetTotalEnergyConsumption(device_handles[i], &energy);
+        if (nvml_error != NVML_SUCCESS)
+        {
+            switch (nvml_error)
+            {
+            case NVML_ERROR_UNINITIALIZED:
+                fprintf(stderr, "POWER METER: ERROR: CUDA device uninitialized\n");
+                break;
+            case NVML_ERROR_INVALID_ARGUMENT:
+                fprintf(stderr, "POWER METER: ERROR: Invalid CUDA device\n");
+                break;
+            case NVML_ERROR_NOT_SUPPORTED:
+                fprintf(stderr, "POWER METER: ERROR: CUDA device not supported\n");
+                break;
+            default:
+                fprintf(stderr, "POWER METER: There was an error reading GPU energy consumption\n");
+                break;
+            }
+        }
         // Value returned by NVML is in mili Joules
         data.energy[i] = (float)energy / 1E3;
     }
