@@ -8,6 +8,7 @@ find_package(CUDAToolkit REQUIRED)
 
 set(RAPL_UTILS_SRCS
   src/rapl_utils.cc
+  src/nvml_utils.cc
   src/msr_reader.cc
   src/power_meter.cc
 )
