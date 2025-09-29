@@ -2,6 +2,8 @@
 #define NVML_UTILS_HH
 
 #include <time.h>
+#include <memory>
+#include <nvml.h>
 
 #define MAX_GPUS 4
 
@@ -26,7 +28,13 @@ namespace nvml_utils
         double total_energy{0};
     };
 
-    // TODO: Init function getting the number of GPUs in the machine
+    extern std::unique_ptr<nvmlDevice_t[]> device_handles;
+    extern unsigned int num_GPUs;
+
+    /*
+    Initialize the number of GPUs in the machine and get their nvml handles
+    */
+    void init();
 
     /*
     Updates the input EnergyAux struct with the last per-gpu energy readings in Joules

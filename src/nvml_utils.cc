@@ -1,15 +1,33 @@
 #include "nvml_utils.hh"
 
 #include <time.h>
-#include <nvml.h>
+
+// Global variable definitions
+namespace nvml_utils
+{
+    unsigned int num_GPUs{0};
+    std::unique_ptr<nvmlDevice_t[]> device_handles;
+}
+
+void nvml_utils::init()
+{
+    nvmlDeviceGetCount_v2(&num_GPUs);
+    device_handles = std::make_unique<nvmlDevice_t[]>(num_GPUs);
+    for (unsigned int i = 0; i < num_GPUs; ++i)
+    {
+        nvmlDeviceGetHandleByIndex_v2(i, &device_handles[i]);
+    }
+}
 
 void nvml_utils::update_gpu_energy(EnergyAux &data)
 {
-    // TODO: Implement this for a variable number of GPUs in the machine
     unsigned long long energy{0};
-    nvmlDeviceGetTotalEnergyConsumption(0, &energy);
-    // Value returned by NVML is in mili Joules
-    data.energy[0] = (float)energy / 1E3;
+    for (unsigned int i = 0; i < num_GPUs; ++i)
+    {
+        nvmlDeviceGetTotalEnergyConsumption(device_handles[i], &energy);
+        // Value returned by NVML is in mili Joules
+        data.energy[i] = (float)energy / 1E3;
+    }
     // Update the timestamp
     clock_gettime(CLOCK_REALTIME, &data.time);
 }
