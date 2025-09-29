@@ -1,12 +1,15 @@
 cmake_minimum_required(VERSION 3.25.2)
 
 project(RAPL_utils
-  LANGUAGES CXX
+  LANGUAGES CXX CUDA
 )
+
+find_package(CUDAToolkit REQUIRED)
 
 set(RAPL_UTILS_SRCS
   src/energy_utils.cc
   src/msr_reader.cc
+  src/power_meter.cc
 )
 
 add_library(RAPL_utils SHARED)
@@ -15,6 +18,7 @@ target_include_directories(RAPL_utils
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/>)
 target_sources(RAPL_utils PRIVATE ${RAPL_UTILS_SRCS})
+target_link_libraries(RAPL_utils CUDA::nvml)
 
 include(GNUInstallDirs)
 
