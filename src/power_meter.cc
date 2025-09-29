@@ -1,5 +1,5 @@
 #include "power_meter.hh"
-#include "energy_utils.hh"
+#include "rapl_utils.hh"
 
 #include <nvml.h>
 #include <thread>

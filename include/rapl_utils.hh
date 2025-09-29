@@ -1,5 +1,5 @@
-#ifndef ENERGY_UTILS_HH
-#define ENERGY_UTILS_HH
+#ifndef rapl_utils_HH
+#define rapl_utils_HH
 
 #include "rapl_const.hh"
 #include <stdio.h>

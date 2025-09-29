@@ -1,4 +1,4 @@
-#include "energy_utils.hh"
+#include "rapl_utils.hh"
 #include "msr_reader.hh"
 
 #include <stdlib.h>

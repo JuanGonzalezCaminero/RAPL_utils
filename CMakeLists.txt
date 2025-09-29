@@ -7,7 +7,7 @@ project(RAPL_utils
 find_package(CUDAToolkit REQUIRED)
 
 set(RAPL_UTILS_SRCS
-  src/energy_utils.cc
+  src/rapl_utils.cc
   src/msr_reader.cc
   src/power_meter.cc
 )
