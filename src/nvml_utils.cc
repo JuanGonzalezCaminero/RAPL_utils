@@ -1,5 +1,6 @@
 #include "nvml_utils.hh"
 
+#include <cstdio>
 #include <time.h>
 
 // Global variable definitions
