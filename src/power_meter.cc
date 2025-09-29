@@ -19,6 +19,8 @@ void power_meter::launch_monitoring_loop(unsigned int sampling_interval_ms)
     do_monitoring = true;
     // Intel: Initialize internal counters
     rapl_utils::init();
+    // Intel: Initialize number of GPUs and device handles
+    nvml_utils::init();
     // CUDA: Start nvml
     nvmlInit_v2();
     // Launch monitoring on a separate thread
