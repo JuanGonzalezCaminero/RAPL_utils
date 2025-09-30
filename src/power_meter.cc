@@ -18,7 +18,11 @@ void power_meter::launch_monitoring_loop(unsigned int sampling_interval_ms)
 {
     do_monitoring = true;
     // Intel: Initialize internal counters
-    rapl_utils::init();
+    if (rapl_utils::init() != 0)
+    {
+        fprintf(stderr, "POWER METER: An error was encountered during initialization\n");
+        return;
+    }
     // CUDA: Start nvml
     nvmlInit_v2();
     // Intel: Initialize number of GPUs and device handles
@@ -41,7 +45,7 @@ Power measurement loop, intended to run on a separate thread
 */
 void power_meter::monitoring_loop(unsigned int sampling_interval_ms)
 {
-    // Structs used to take measurements from Intel's RAPL interface
+    // Structs used to take measurements from Intel/AMD's RAPL interface
     rapl_utils::EnergyAux intel_pkg_data;
     rapl_utils::EnergyAux current_intel_pkg_data;
     rapl_utils::EnergyData intel_pkg_results;
@@ -51,7 +55,7 @@ void power_meter::monitoring_loop(unsigned int sampling_interval_ms)
     nvml_utils::EnergyData cuda_results;
 
     // Get the initial energy readings
-    // Intel: Get the current energy measurement for RAPL's package domain
+    // CPU: Get the current energy measurement for RAPL's package domain
     rapl_utils::update_package_energy(intel_pkg_data);
     // CUDA
     nvml_utils::update_gpu_energy(cuda_data);
@@ -59,9 +63,9 @@ void power_meter::monitoring_loop(unsigned int sampling_interval_ms)
     while (do_monitoring)
     {
         std::this_thread::sleep_for(std::chrono::milliseconds(sampling_interval_ms));
-        // Intel: Update energy measurements
+        // CPU: Update energy measurements
         rapl_utils::update_package_energy(current_intel_pkg_data);
-        // Intel: Compute energy and average power usage for this interval, update total energy consumption
+        // CPU: Compute energy and average power usage for this interval, update total energy consumption
         rapl_utils::update_energy_data(intel_pkg_results, intel_pkg_data, current_intel_pkg_data);
         // CUDA: Update energy measurements
         nvml_utils::update_gpu_energy(current_cuda_data);
@@ -72,7 +76,7 @@ void power_meter::monitoring_loop(unsigned int sampling_interval_ms)
         std::swap(intel_pkg_data, current_intel_pkg_data);
         std::swap(cuda_data, current_cuda_data);
 
-        printf("INTEL Power: %lf, Energy: %lf, Total energy: %lf\n", intel_pkg_results.power, intel_pkg_results.energy, intel_pkg_results.total_energy);
+        printf("CPU Power: %lf, Energy: %lf, Total energy: %lf\n", intel_pkg_results.power, intel_pkg_results.energy, intel_pkg_results.total_energy);
         printf("CUDA Power: %lf, Energy: %lf, Total energy: %lf\n", cuda_results.power, cuda_results.energy, cuda_results.total_energy);
     }
 }

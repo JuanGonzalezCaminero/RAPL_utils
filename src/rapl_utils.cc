@@ -12,8 +12,11 @@ namespace rapl_utils
 {
   // MSR value arrays
   unsigned long long INTEL_MSR_RAPL_POWER_UNIT_VALUES[INTEL_MSR_RAPL_POWER_UNIT_NUMFIELDS];
+  unsigned long long AMD_MSR_RAPL_POWER_UNIT_VALUES[AMD_MSR_RAPL_POWER_UNIT_NUMFIELDS];
   unsigned long long INTEL_MSR_PKG_ENERGY_STATUS_VALUES[INTEL_MSR_PKG_ENERGY_STATUS_NUMFIELDS];
+  unsigned long long AMD_MSR_PKG_ENERGY_STATUS_VALUES[AMD_MSR_PKG_ENERGY_STATUS_NUMFIELDS];
   unsigned long long INTEL_MSR_PP0_ENERGY_STATUS_VALUES[INTEL_MSR_PP0_ENERGY_STATUS_NUMFIELDS];
+  unsigned long long AMD_MSR_CORE_ENERGY_STATUS_VALUES[AMD_MSR_CORE_ENERGY_STATUS_NUMFIELDS];
   unsigned long long INTEL_MSR_PKG_POWER_INFO_VALUES[INTEL_MSR_PKG_POWER_INFO_NUMFIELDS];
 
   // Energy measurement variables
@@ -25,6 +28,7 @@ namespace rapl_utils
   int numa_nodes{0};
   std::unique_ptr<int[]> first_node_core;
   int numcores{0};
+  int vendor_id{-1};
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -44,8 +48,34 @@ that both CPUs will have the same reporting precissions for RAPL values. This is
 probably a safe assumption since valid CPU combinations will use very similar
 CPUs.
 */
-void rapl_utils::init()
+int rapl_utils::init()
 {
+  // We need to ID the CPU vendor as the MSR registers use different adresses on Intel/AMD
+  int vendor_id_str;
+  __asm__("cpuid" : "=c"(vendor_id_str) : /* Output the contents of ECX to vendor_id it will be "ntel" for Intel and "cAMD" for AMD
+                                             0x6c65746e - "letn" as the processor is little-endian
+                                             0x444d4163 - "DMAc"*/
+          "a"(0) :                        // With EAX=0 CPUID returns the vendor Id string on EBX, ECX and EDX, ECX contains the last 4 characters
+          "ebx", "edx");                  // CPUID clobbers EBX and EDX in addition to EAX and ECX
+  /*
+  From: https://stackoverflow.com/questions/466377/how-to-detect-what-cpu-is-being-used-during-runtime
+  and: https://www.felixcloutier.com/x86/cpuid
+  */
+
+  switch (vendor_id_str)
+  {
+  case 0x6c65746e:
+    vendor_id = VENDOR_ID::INTEL;
+    printf("POWER METER: CPU Vendor ID: Intel\n");
+  case 0x444d4163:
+    vendor_id = VENDOR_ID::AMD;
+    printf("POWER METER: CPU Vendor ID: AMD\n");
+    break;
+  default:
+    fprintf(stderr, "ERROR: CPU Vendor ID not recognised\n");
+    return 1;
+  }
+
   // Get the number of NUMA nodes. This file contains a list of node IDs
   // separated by "-". The length in characters of the file will be 2 for 1 node
   // (0 + \n), and increase by 2 for each succesive node
@@ -81,18 +111,33 @@ void rapl_utils::init()
       1;
   fclose(onlinecores);
 
-  read_INTEL_MSR_RAPL_POWER_UNIT(0);
-  power_increment =
-      1 / (float)(1 << (unsigned int)INTEL_MSR_RAPL_POWER_UNIT_VALUES[0]);
-  energy_increment =
-      1 / (float)(1 << (unsigned int)INTEL_MSR_RAPL_POWER_UNIT_VALUES[1]);
-  time_increment =
-      1 / (float)(1 << (unsigned int)INTEL_MSR_RAPL_POWER_UNIT_VALUES[2]);
+  if (vendor_id == VENDOR_ID::INTEL)
+  {
+    read_INTEL_MSR_RAPL_POWER_UNIT(0, INTEL_MSR_RAPL_POWER_UNIT_VALUES);
+    power_increment =
+        1 / (float)(1 << (unsigned int)INTEL_MSR_RAPL_POWER_UNIT_VALUES[0]);
+    energy_increment =
+        1 / (float)(1 << (unsigned int)INTEL_MSR_RAPL_POWER_UNIT_VALUES[1]);
+    time_increment =
+        1 / (float)(1 << (unsigned int)INTEL_MSR_RAPL_POWER_UNIT_VALUES[2]);
+  }
+  else if (vendor_id == VENDOR_ID::AMD)
+  {
+    read_AMD_MSR_RAPL_POWER_UNIT(0, AMD_MSR_RAPL_POWER_UNIT_VALUES);
+    power_increment =
+        1 / (float)(1 << (unsigned int)AMD_MSR_RAPL_POWER_UNIT_VALUES[0]);
+    energy_increment =
+        1 / (float)(1 << (unsigned int)AMD_MSR_RAPL_POWER_UNIT_VALUES[1]);
+    time_increment =
+        1 / (float)(1 << (unsigned int)AMD_MSR_RAPL_POWER_UNIT_VALUES[2]);
+  }
 
   // The maximum value of the energy counter is 2^32, stored here in joules
   energy_counter_max = ((long)1U << 32) * energy_increment;
 
   printf("POWER METER: Number of NUMA nodes detected: %d\n", numa_nodes);
+
+  return 0;
 }
 
 float rapl_utils::get_node_energy(int node, int domain)
@@ -101,13 +146,29 @@ float rapl_utils::get_node_energy(int node, int domain)
   {
   // Package
   case 0:
-    read_INTEL_MSR_PKG_ENERGY_STATUS(first_node_core[node]);
-    return (float)INTEL_MSR_PKG_ENERGY_STATUS_VALUES[0] * energy_increment;
+    if (vendor_id == VENDOR_ID::INTEL)
+    {
+      read_INTEL_MSR_PKG_ENERGY_STATUS(first_node_core[node], INTEL_MSR_PKG_ENERGY_STATUS_VALUES);
+      return (float)INTEL_MSR_PKG_ENERGY_STATUS_VALUES[0] * energy_increment;
+    }
+    else
+    {
+      read_AMD_MSR_PKG_ENERGY_STATUS(first_node_core[node], AMD_MSR_PKG_ENERGY_STATUS_VALUES);
+      return (float)AMD_MSR_PKG_ENERGY_STATUS_VALUES[0] * energy_increment;
+    }
     break;
   // Cores
   case 1:
-    read_INTEL_MSR_PP0_ENERGY_STATUS(first_node_core[node]);
-    return (float)INTEL_MSR_PP0_ENERGY_STATUS_VALUES[0] * energy_increment;
+    if (vendor_id == VENDOR_ID::INTEL)
+    {
+      read_INTEL_MSR_PP0_ENERGY_STATUS(first_node_core[node], INTEL_MSR_PP0_ENERGY_STATUS_VALUES);
+      return (float)INTEL_MSR_PP0_ENERGY_STATUS_VALUES[0] * energy_increment;
+    }
+    else
+    {
+      read_AMD_MSR_CORE_ENERGY_STATUS(first_node_core[node], AMD_MSR_CORE_ENERGY_STATUS_VALUES);
+      return (float)AMD_MSR_CORE_ENERGY_STATUS_VALUES[0] * energy_increment;
+    }
     break;
   // Uncore
   case 2:
@@ -186,11 +247,17 @@ void rapl_utils::update_energy_data(EnergyData &output_data, const EnergyAux &pr
 
 float rapl_utils::get_processor_tdp()
 {
+  if (!vendor_id == VENDOR_ID::INTEL)
+  {
+    fprintf(stderr, "POWER METER: ERROR: get_processor_tdp() only works with Intel CPUs\n");
+    return 0;
+  }
+
   float total_tdp = 0;
 
   for (int i = 0; i < numa_nodes; i++)
   {
-    read_INTEL_MSR_PKG_POWER_INFO(first_node_core[i]);
+    read_INTEL_MSR_PKG_POWER_INFO(first_node_core[i], INTEL_MSR_PKG_POWER_INFO_VALUES);
     total_tdp += (float)INTEL_MSR_PKG_POWER_INFO_VALUES[0];
   }
 
@@ -201,34 +268,58 @@ float rapl_utils::get_processor_tdp()
 //						          READING MSR FIELDS
 //////////////////////////////////////////////////////////////////////
 
-void rapl_utils::read_INTEL_MSR_RAPL_POWER_UNIT(int core)
+void rapl_utils::read_INTEL_MSR_RAPL_POWER_UNIT(int core, unsigned long long *output)
 {
   read_msr_fields(
       core, INTEL_MSR_RAPL_POWER_UNIT, INTEL_MSR_RAPL_POWER_UNIT_NUMFIELDS,
       INTEL_MSR_RAPL_POWER_UNIT_OFFSETS, INTEL_MSR_RAPL_POWER_UNIT_SIZES,
-      INTEL_MSR_RAPL_POWER_UNIT_VALUES);
+      output);
 }
 
-void rapl_utils::read_INTEL_MSR_PKG_ENERGY_STATUS(int core)
+void rapl_utils::read_INTEL_MSR_PKG_ENERGY_STATUS(int core, unsigned long long *output)
 {
   read_msr_fields(
       core, INTEL_MSR_PKG_ENERGY_STATUS, INTEL_MSR_PKG_ENERGY_STATUS_NUMFIELDS,
       INTEL_MSR_PKG_ENERGY_STATUS_OFFSETS, INTEL_MSR_PKG_ENERGY_STATUS_SIZES,
-      INTEL_MSR_PKG_ENERGY_STATUS_VALUES);
+      output);
 }
 
-void rapl_utils::read_INTEL_MSR_PP0_ENERGY_STATUS(int core)
+void rapl_utils::read_INTEL_MSR_PP0_ENERGY_STATUS(int core, unsigned long long *output)
 {
   read_msr_fields(
       core, INTEL_MSR_PP0_ENERGY_STATUS, INTEL_MSR_PP0_ENERGY_STATUS_NUMFIELDS,
       INTEL_MSR_PP0_ENERGY_STATUS_OFFSETS, INTEL_MSR_PP0_ENERGY_STATUS_SIZES,
-      INTEL_MSR_PP0_ENERGY_STATUS_VALUES);
+      output);
 }
 
-void rapl_utils::read_INTEL_MSR_PKG_POWER_INFO(int core)
+void rapl_utils::read_INTEL_MSR_PKG_POWER_INFO(int core, unsigned long long *output)
 {
   read_msr_fields(
       core, INTEL_MSR_PKG_POWER_INFO, INTEL_MSR_PKG_POWER_INFO_NUMFIELDS,
       INTEL_MSR_PKG_POWER_INFO_OFFSETS, INTEL_MSR_PKG_POWER_INFO_SIZES,
-      INTEL_MSR_PKG_POWER_INFO_VALUES);
+      output);
+}
+
+void rapl_utils::read_AMD_MSR_RAPL_POWER_UNIT(int core, unsigned long long *output)
+{
+  read_msr_fields(
+      core, AMD_MSR_RAPL_POWER_UNIT, AMD_MSR_RAPL_POWER_UNIT_NUMFIELDS,
+      AMD_MSR_RAPL_POWER_UNIT_OFFSETS, AMD_MSR_RAPL_POWER_UNIT_SIZES,
+      output);
+}
+
+void rapl_utils::read_AMD_MSR_PKG_ENERGY_STATUS(int core, unsigned long long *output)
+{
+  read_msr_fields(
+      core, AMD_MSR_PKG_ENERGY_STATUS, AMD_MSR_PKG_ENERGY_STATUS_NUMFIELDS,
+      AMD_MSR_PKG_ENERGY_STATUS_OFFSETS, AMD_MSR_PKG_ENERGY_STATUS_SIZES,
+      output);
+}
+
+void rapl_utils::read_AMD_MSR_CORE_ENERGY_STATUS(int core, unsigned long long *output)
+{
+  read_msr_fields(
+      core, AMD_MSR_CORE_ENERGY_STATUS, AMD_MSR_CORE_ENERGY_STATUS_NUMFIELDS,
+      AMD_MSR_CORE_ENERGY_STATUS_OFFSETS, AMD_MSR_CORE_ENERGY_STATUS_SIZES,
+      output);
 }

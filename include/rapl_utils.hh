@@ -43,6 +43,13 @@ namespace rapl_utils
     extern unsigned long long
         INTEL_MSR_PKG_POWER_INFO_VALUES[INTEL_MSR_PKG_POWER_INFO_NUMFIELDS];
 
+    extern unsigned long long
+        AMD_MSR_RAPL_POWER_UNIT_VALUES[AMD_MSR_RAPL_POWER_UNIT_NUMFIELDS];
+    extern unsigned long long
+        AMD_MSR_PKG_ENERGY_STATUS_VALUES[AMD_MSR_PKG_ENERGY_STATUS_NUMFIELDS];
+    extern unsigned long long
+        AMD_MSR_CORE_ENERGY_STATUS_VALUES[AMD_MSR_CORE_ENERGY_STATUS_NUMFIELDS];
+
     /*
     Store the increment for each unit in this machine
     */
@@ -61,6 +68,16 @@ namespace rapl_utils
     */
     extern int numa_nodes;
 
+    /*
+    Vendor ID enum
+    */
+    enum VENDOR_ID
+    {
+        INTEL,
+        AMD
+    };
+    extern int vendor_id;
+
     extern std::unique_ptr<int[]> first_node_core;
     extern int numcores;
 
@@ -72,7 +89,7 @@ namespace rapl_utils
     Initializes the program, reading the energy units MSR and computing the
     increments for each unit in this machine
     */
-    void init();
+    int init();
 
     /*
     Returns the last energy reading of the specified RAPL domain in Joules
@@ -131,18 +148,22 @@ namespace rapl_utils
     //////////////////////////////////////////////////////////////////////
 
     /*
-    Reads the MSR and stores its values in INTEL_MSR_RAPL_POWER_UNIT_VALUES
+    Reads the MSR and stores its values in the provided array
+    These functions are mostly for convenience
     */
-    void read_INTEL_MSR_RAPL_POWER_UNIT(int core);
+    void read_INTEL_MSR_RAPL_POWER_UNIT(int core, unsigned long long *output);
 
-    /*
-    Reads the MSR and stores its values in INTEL_MSR_PKG_ENERGY_STATUS
-    */
-    void read_INTEL_MSR_PKG_ENERGY_STATUS(int core);
+    void read_INTEL_MSR_PKG_ENERGY_STATUS(int core, unsigned long long *output);
 
-    void read_INTEL_MSR_PP0_ENERGY_STATUS(int core);
+    void read_INTEL_MSR_PP0_ENERGY_STATUS(int core, unsigned long long *output);
 
-    void read_INTEL_MSR_PKG_POWER_INFO(int core);
+    void read_INTEL_MSR_PKG_POWER_INFO(int core, unsigned long long *output);
+
+    void read_AMD_MSR_RAPL_POWER_UNIT(int core, unsigned long long *output);
+
+    void read_AMD_MSR_PKG_ENERGY_STATUS(int core, unsigned long long *output);
+
+    void read_AMD_MSR_CORE_ENERGY_STATUS(int core, unsigned long long *output);
 
 } // namespace rapl_utils
 
