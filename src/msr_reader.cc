@@ -15,7 +15,6 @@ FILE *rapl_utils::open_msr(int core)
 
   if (!file)
   {
-    fprintf(stderr, "Could not open %s\n", filename);
     throw std::filesystem::filesystem_error(
         "Could not open MSR file, needs root access", filename, 
         std::make_error_code(std::errc::permission_denied));

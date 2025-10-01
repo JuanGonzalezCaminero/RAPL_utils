@@ -1,6 +1,7 @@
 #include "power_meter.hh"
 #include "rapl_utils.hh"
 #include "nvml_utils.hh"
+#include "msr_reader.hh"
 
 #include <nvml.h>
 #include <thread>
@@ -15,8 +16,9 @@ namespace power_meter
 }
 
 void power_meter::launch_monitoring_loop(unsigned int sampling_interval_ms)
-{
-    do_monitoring = true;
+{   
+    // Check whether we have access to the MSR files
+    rapl_utils::open_msr(0);
     // Intel: Initialize internal counters
     if (rapl_utils::init() != 0)
     {
@@ -28,6 +30,7 @@ void power_meter::launch_monitoring_loop(unsigned int sampling_interval_ms)
     // Intel: Initialize number of GPUs and device handles
     nvml_utils::init();
     // Launch monitoring on a separate thread
+    do_monitoring = true;
     monitoring_thread = std::thread(monitoring_loop, sampling_interval_ms);
 }
 
