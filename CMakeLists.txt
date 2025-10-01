@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.25.2)
 
-project(RAPL_utils
+project(Power_meter
   LANGUAGES CXX CUDA
 )
 
@@ -13,18 +13,18 @@ set(RAPL_UTILS_SRCS
   src/power_meter.cc
 )
 
-add_library(RAPL_utils SHARED)
-target_include_directories(RAPL_utils 
+add_library(Power_meter SHARED)
+target_include_directories(Power_meter 
     PUBLIC 
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/>)
-target_sources(RAPL_utils PRIVATE ${RAPL_UTILS_SRCS})
-target_link_libraries(RAPL_utils CUDA::nvml)
+target_sources(Power_meter PRIVATE ${RAPL_UTILS_SRCS})
+target_link_libraries(Power_meter CUDA::nvml)
 
 include(GNUInstallDirs)
 
-install(TARGETS RAPL_utils
-    EXPORT RAPL_utilsTargets
+install(TARGETS Power_meter
+    EXPORT Power_meterTargets
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
@@ -34,19 +34,19 @@ install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 include(CMakePackageConfigHelpers)
 configure_package_config_file(
-    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/RAPL_utilsConfig.cmake.in
-    ${CMAKE_CURRENT_BINARY_DIR}/RAPL_utilsConfig.cmake
-    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/RAPL_utils
+    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Power_meterConfig.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}/Power_meterConfig.cmake
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Power_meter
     PATH_VARS CMAKE_INSTALL_INCLUDEDIR
 )
 
 install(FILES
-    ${CMAKE_CURRENT_BINARY_DIR}/RAPL_utilsConfig.cmake
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/RAPL_utils
+    ${CMAKE_CURRENT_BINARY_DIR}/Power_meterConfig.cmake
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Power_meter
 )
 
-install(EXPORT RAPL_utilsTargets
-    FILE RAPL_utilsTargets.cmake
-    NAMESPACE RAPL_utils::
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/RAPL_utils
+install(EXPORT Power_meterTargets
+    FILE Power_meterTargets.cmake
+    NAMESPACE Power_meter::
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Power_meter
     )
