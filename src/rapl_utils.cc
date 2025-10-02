@@ -58,7 +58,6 @@ int rapl_utils::init()
           "a"(0) :                        // With EAX=0 CPUID returns the vendor Id string on EBX, ECX and EDX, ECX contains the last 4 characters
           "ebx", "edx");                  // CPUID clobbers EBX and EDX in addition to EAX and ECX
   /*
-  From: https://stackoverflow.com/questions/466377/how-to-detect-what-cpu-is-being-used-during-runtime
   and: https://www.felixcloutier.com/x86/cpuid
   */
 
